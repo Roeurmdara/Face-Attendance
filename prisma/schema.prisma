@@ -1,0 +1,41 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Student {
+  id                    Int       @id @default(autoincrement())
+  rollNumber            String    @unique
+  firstName             String
+  lastName              String
+  email                 String?
+  phoneNumber           String?
+  faceEncodingPath      String?
+  faceEncodings         Json?     // ← ADD THIS: stores the actual encoding arrays
+  registeredAt          DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  attendanceRecords     Attendance[]
+}
+
+model Attendance {
+  id                    Int       @id @default(autoincrement())
+  studentId             Int
+  student               Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date                  DateTime  @db.Date
+  checkInTime           DateTime
+  confidence            Float     // Confidence score of face recognition (0-1)
+  createdAt             DateTime  @default(now())
+
+  @@unique([studentId, date])
+  @@index([studentId])
+  @@index([date])
+  @@map("attendance")
+}
