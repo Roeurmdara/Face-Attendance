@@ -151,7 +151,7 @@ export default function Home() {
 
       {/* Setup Instructions */}
       <section className="border-t border-blue-800 px-4 py-16">
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto max-w-6xl">
           <h3 className="text-2xl font-bold text-white mb-6">Quick Start</h3>
 
           <div className="space-y-4">

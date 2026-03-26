@@ -1,26 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Download,
   Loader2,
   Search,
   Calendar,
-  User,
   Clock,
   AlertCircle,
+  X,
 } from "lucide-react";
 
 interface AttendanceRecord {
@@ -53,7 +45,6 @@ export function AttendanceRecords() {
     searchTerm: "",
   });
 
-  // Load attendance records
   useEffect(() => {
     const loadRecords = async () => {
       try {
@@ -61,22 +52,14 @@ export function AttendanceRecords() {
         setError(null);
 
         const params = new URLSearchParams();
-        if (filters.date) {
-          params.append("date", filters.date);
-        }
-        if (filters.studentId) {
-          params.append("studentId", filters.studentId);
-        }
+        if (filters.date) params.append("date", filters.date);
+        if (filters.studentId) params.append("studentId", filters.studentId);
 
         const response = await fetch(`/api/attendance?${params.toString()}`);
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch records");
-        }
+        if (!response.ok) throw new Error("Failed to fetch records");
 
         const data = await response.json();
 
-        // Filter by search term if provided
         let filtered = data;
         if (filters.searchTerm) {
           const term = filters.searchTerm.toLowerCase();
@@ -99,27 +82,18 @@ export function AttendanceRecords() {
     loadRecords();
   }, [filters.date, filters.studentId]);
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilters((prev) => ({
-      ...prev,
-      date: e.target.value,
-    }));
-  };
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setFilters((prev) => ({ ...prev, date: e.target.value }));
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilters((prev) => ({
-      ...prev,
-      searchTerm: e.target.value,
-    }));
-  };
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setFilters((prev) => ({ ...prev, searchTerm: e.target.value }));
 
-  const handleClearFilters = () => {
+  const handleClearFilters = () =>
     setFilters({
       date: new Date().toISOString().split("T")[0],
       studentId: "",
       searchTerm: "",
     });
-  };
 
   const handleExportCSV = () => {
     const headers = ["Roll Number", "Name", "Date", "Check-in Time", "Confidence"];
@@ -130,12 +104,7 @@ export function AttendanceRecords() {
       new Date(record.checkInTime).toLocaleTimeString(),
       `${Math.round(record.confidence * 100)}%`,
     ]);
-
-    const csv = [
-      headers.join(","),
-      ...rows.map((row) => row.join(",")),
-    ].join("\n");
-
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -146,186 +115,206 @@ export function AttendanceRecords() {
 
   const getTodayTotal = () => {
     const today = new Date().toISOString().split("T")[0];
-    return records.filter(
-      (r) => r.date.split("T")[0] === today
-    ).length;
+    return records.filter((r) => r.date.split("T")[0] === today).length;
   };
 
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.95) return "bg-green-100 text-green-800";
-    if (confidence >= 0.85) return "bg-blue-100 text-blue-800";
-    if (confidence >= 0.75) return "bg-yellow-100 text-yellow-800";
-    return "bg-orange-100 text-orange-800";
+  const avgConfidence =
+    records.length > 0
+      ? Math.round(
+          (records.reduce((sum, r) => sum + r.confidence, 0) / records.length) * 100
+        )
+      : 0;
+
+  const getConfidenceBadge = (confidence: number) => {
+    const pct = Math.round(confidence * 100);
+    if (confidence >= 0.95)
+      return (
+        <Badge className="bg-green-50 text-green-700 border border-green-200 font-medium text-xs">
+          {pct}%
+        </Badge>
+      );
+    if (confidence >= 0.85)
+      return (
+        <Badge className="bg-blue-50 text-blue-700 border border-blue-200 font-medium text-xs">
+          {pct}%
+        </Badge>
+      );
+    if (confidence >= 0.75)
+      return (
+        <Badge className="bg-amber-50 text-amber-700 border border-amber-200 font-medium text-xs">
+          {pct}%
+        </Badge>
+      );
+    return (
+      <Badge className="bg-orange-50 text-orange-700 border border-orange-200 font-medium text-xs">
+        {pct}%
+      </Badge>
+    );
   };
 
   return (
-    <div className="space-y-6">
-      {/* Filters Card */}
-      <Card className="p-6">
-        <h2 className="mb-4 text-xl font-semibold text-gray-900">Filters</h2>
+    <div className="min-h-screen bg-slate-50 p-6 md:p-10">
+      <div className="mx-auto max-w-5xl space-y-5">
 
-        <div className="grid gap-4 md:grid-cols-3">
+        {/* Page header */}
+        <div className="flex items-end justify-between">
           <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Date
-            </label>
-            <Input
-              type="date"
-              value={filters.date}
-              onChange={handleDateChange}
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Search Student
-            </label>
-            <div className="relative mt-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Name or Roll Number"
-                value={filters.searchTerm}
-                onChange={handleSearchChange}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-end">
-            <Button
-              onClick={handleClearFilters}
-              variant="outline"
-              className="w-full"
-            >
-              Clear Filters
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* Stats Card */}
-      <Card className="p-6">
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-lg bg-blue-50 p-4">
-            <p className="text-sm text-gray-600">Total Records</p>
-            <p className="text-3xl font-bold text-blue-600">{records.length}</p>
-          </div>
-          <div className="rounded-lg bg-green-50 p-4">
-            <p className="text-sm text-gray-600">Today's Attendance</p>
-            <p className="text-3xl font-bold text-green-600">{getTodayTotal()}</p>
-          </div>
-          <div className="rounded-lg bg-purple-50 p-4">
-            <p className="text-sm text-gray-600">Average Confidence</p>
-            <p className="text-3xl font-bold text-purple-600">
-              {records.length > 0
-                ? Math.round(
-                    (records.reduce((sum, r) => sum + r.confidence, 0) /
-                      records.length) *
-                      100
-                  )
-                : 0}
-              %
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-blue-400 mb-1">
+              Classroom
             </p>
+            <h1 className="text-2xl font-semibold text-slate-900">
+              Attendance
+            </h1>
           </div>
-        </div>
-      </Card>
-
-      {/* Records Table */}
-      <Card className="p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Attendance Records
-          </h2>
           <Button
             onClick={handleExportCSV}
             disabled={records.length === 0}
-            size="sm"
-            variant="outline"
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 h-9 rounded-lg flex items-center gap-2 disabled:opacity-40 transition-colors"
           >
-            <Download className="mr-2 h-4 w-4" />
+            <Download className="h-4 w-4" />
             Export CSV
           </Button>
         </div>
 
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+        {/* Stat cards */}
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { label: "Total records", value: records.length },
+            { label: "Today", value: getTodayTotal() },
+            { label: "Avg confidence", value: `${avgConfidence}%` },
+          ].map(({ label, value }) => (
+            <div
+              key={label}
+              className="rounded-xl bg-white border border-slate-100 px-5 py-4"
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-1">
+                {label}
+              </p>
+              <p className="text-3xl font-semibold text-slate-900">{value}</p>
+            </div>
+          ))}
+        </div>
 
-        {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        {/* Filters */}
+        <div className="rounded-xl bg-white border border-slate-100 px-5 py-4">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-3">
+            Filters
+          </p>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:items-end">
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-1.5 block">
+                Date
+              </label>
+              <Input
+                type="date"
+                value={filters.date}
+                onChange={handleDateChange}
+                className="h-9 text-sm border-slate-200 rounded-lg focus-visible:ring-blue-100 focus-visible:border-blue-400"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-1.5 block">
+                Search student
+              </label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                <Input
+                  placeholder="Name or roll number"
+                  value={filters.searchTerm}
+                  onChange={handleSearchChange}
+                  className="pl-8 h-9 text-sm border-slate-200 rounded-lg focus-visible:ring-blue-100 focus-visible:border-blue-400"
+                />
+              </div>
+            </div>
+            <div>
+            <Button
+              onClick={handleClearFilters}
+              variant="outline"
+              className="h-9 w-full md:w-auto text-sm rounded-lg flex items-center justify-center gap-2 border-slate-200 hover:bg-slate-50 transition-colors"
+            >
+              <X className="h-4 w-4" />
+              Clear filters
+            </Button>
+            </div>
           </div>
-        ) : records.length === 0 ? (
-          <div className="py-8 text-center text-gray-500">
-            <p>No attendance records found.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                    Student
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                    Roll Number
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                    Date
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                    Check-in Time
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                    Confidence
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {records.map((record) => (
-                  <tr
-                    key={record.id}
-                    className="border-b border-gray-100 hover:bg-gray-50"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">
-                        {record.student.firstName} {record.student.lastName}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {record.student.rollNumber}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Calendar className="h-4 w-4" />
-                        {new Date(record.date).toLocaleDateString()}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Clock className="h-4 w-4" />
-                        {new Date(record.checkInTime).toLocaleTimeString()}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge
-                        className={getConfidenceColor(record.confidence)}
-                        variant="secondary"
-                      >
-                        {Math.round(record.confidence * 100)}%
-                      </Badge>
-                    </td>
+        </div>
+
+        {/* Table */}
+        <div className="rounded-xl bg-white border border-slate-100 overflow-hidden">
+          {error && (
+            <div className="p-4 border-b border-slate-100">
+              <Alert className="border-red-200 bg-red-50">
+                <AlertCircle className="h-4 w-4 text-red-500" />
+                <AlertDescription className="text-red-700 text-sm">
+                  {error}
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="flex justify-center items-center py-16">
+              <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
+            </div>
+          ) : records.length === 0 ? (
+            <div className="py-16 text-center">
+              <p className="text-sm text-slate-400">No attendance records found.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    {["Student", "Roll no.", "Date", "Check-in", "Confidence"].map(
+                      (heading) => (
+                        <th
+                          key={heading}
+                          className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-slate-400"
+                        >
+                          {heading}
+                        </th>
+                      )
+                    )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+                </thead>
+                <tbody>
+                  {records.map((record, i) => (
+                    <tr
+                      key={record.id}
+                      className={`hover:bg-slate-50/70 transition-colors ${
+                        i < records.length - 1 ? "border-b border-slate-50" : ""
+                      }`}
+                    >
+                      <td className="px-5 py-3.5 text-sm font-medium text-slate-900">
+                        {record.student.firstName} {record.student.lastName}
+                      </td>
+                      <td className="px-5 py-3.5 font-mono text-xs text-slate-500">
+                        {record.student.rollNumber}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className="flex items-center gap-1.5 text-sm text-slate-500">
+                          <Calendar className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                          {new Date(record.date).toLocaleDateString()}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className="flex items-center gap-1.5 text-sm text-slate-500">
+                          <Clock className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                          {new Date(record.checkInTime).toLocaleTimeString()}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {getConfidenceBadge(record.confidence)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+      </div>
     </div>
   );
 }
