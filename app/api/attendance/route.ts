@@ -82,7 +82,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (!student) {
-      return NextResponse.json({ error: "Student not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Student not registered yet" },
+        { status: 404 }
+      );
     }
 
     // UTC-safe start of today

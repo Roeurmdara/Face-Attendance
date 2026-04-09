@@ -60,6 +60,14 @@ class FaceRecognitionResponse(BaseModel):
     error: str | None = None
 
 
+class BatchFaceRecognitionResponse(BaseModel):
+    """Response model for batch face recognition"""
+    recognized: bool
+    confidence: float = 0.0
+    student_id: int | None = None
+    error: str | None = None
+
+
 def decode_image_from_base64(image_data: str):
     """Decode base64 image string to OpenCV format"""
     try:
@@ -197,8 +205,8 @@ async def recognize_face(request: FaceRecognitionRequest):
             if similarity > best_similarity:
                 best_similarity = similarity
 
-        # Threshold: similarity above 0.7 is typically a match for Facenet
-        facenet_threshold = 0.7
+        # Threshold: similarity above 0.6 is typically a match for Facenet
+        facenet_threshold = 0.6
         recognized = best_similarity >= facenet_threshold
         confidence = float(max(0, min(1, best_similarity)))
 
@@ -209,6 +217,60 @@ async def recognize_face(request: FaceRecognitionRequest):
 
     except Exception as e:
         return FaceRecognitionResponse(
+            recognized=False,
+            error=f"Error during recognition: {str(e)}"
+        )
+
+
+@app.post("/recognize-batch", response_model=BatchFaceRecognitionResponse)
+async def recognize_face_batch(request: FaceRecognitionRequest):
+    """
+    Recognize a face by comparing against ALL stored encodings in a single call.
+    This is much faster than calling /recognize multiple times.
+    Returns the best match with its confidence and index.
+    """
+    try:
+        test_image = decode_image_from_base64(request.test_image_data)
+        test_embedding, face_count = get_face_embedding(test_image)
+
+        if face_count == 0 or test_embedding is None:
+            return BatchFaceRecognitionResponse(
+                recognized=False,
+                error="No faces detected in the image"
+            )
+
+        # Convert to numpy array
+        test_vec = np.array(test_embedding)
+
+        # Compare with ALL stored encodings using cosine similarity
+        best_similarity = 0.0
+        best_index = -1
+
+        for idx, stored_enc in enumerate(request.stored_encodings):
+            stored_vec = np.array(stored_enc)
+
+            # Cosine similarity
+            dot = np.dot(test_vec, stored_vec)
+            norm = np.linalg.norm(test_vec) * np.linalg.norm(stored_vec)
+            similarity = dot / norm if norm > 0 else 0.0
+
+            if similarity > best_similarity:
+                best_similarity = similarity
+                best_index = idx
+
+        # Threshold: similarity above 0.6 is typically a match for Facenet
+        facenet_threshold = 0.6
+        recognized = best_similarity >= facenet_threshold
+        confidence = float(max(0, min(1, best_similarity)))
+
+        return BatchFaceRecognitionResponse(
+            recognized=recognized,
+            confidence=confidence,
+            student_id=best_index if best_index >= 0 else None
+        )
+
+    except Exception as e:
+        return BatchFaceRecognitionResponse(
             recognized=False,
             error=f"Error during recognition: {str(e)}"
         )

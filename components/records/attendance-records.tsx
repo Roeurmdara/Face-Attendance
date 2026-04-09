@@ -35,6 +35,24 @@ interface FilterOptions {
   searchTerm: string;
 }
 
+type AttendanceStatus = "On Time" | "Late" | "Absent";
+
+function getAttendanceStatus(checkInTime: string): AttendanceStatus {
+  const date = new Date(checkInTime);
+  const totalMinutes = date.getHours() * 60 + date.getMinutes();
+  if (totalMinutes < 7 * 60 + 30) return "On Time";
+  if (totalMinutes < 7 * 60 + 50) return "Late";
+  return "Absent";
+}
+
+function StatusBadge({ status }: { status: AttendanceStatus }) {
+  if (status === "On Time")
+    return <Badge className="bg-green-50 text-green-700 border border-green-200 font-medium text-xs">On Time</Badge>;
+  if (status === "Late")
+    return <Badge className="bg-amber-50 text-amber-700 border border-amber-200 font-medium text-xs">Late</Badge>;
+  return <Badge className="bg-red-50 text-red-700 border border-red-200 font-medium text-xs">Absent</Badge>;
+}
+
 export function AttendanceRecords() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,12 +114,13 @@ export function AttendanceRecords() {
     });
 
   const handleExportCSV = () => {
-    const headers = ["Roll Number", "Name", "Date", "Check-in Time", "Confidence"];
+    const headers = ["Roll Number", "Name", "Date", "Check-in Time", "Status", "Confidence"];
     const rows = records.map((record) => [
       record.student.rollNumber,
       `${record.student.firstName} ${record.student.lastName}`,
       new Date(record.date).toLocaleDateString(),
       new Date(record.checkInTime).toLocaleTimeString(),
+      getAttendanceStatus(record.checkInTime),
       `${Math.round(record.confidence * 100)}%`,
     ]);
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
@@ -265,7 +284,7 @@ export function AttendanceRecords() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-100">
-                    {["Student", "Roll no.", "Date", "Check-in", "Confidence"].map(
+                    {["Student", "Roll no.", "Date", "Check-in", "Status", "Confidence"].map(
                       (heading) => (
                         <th
                           key={heading}
@@ -302,6 +321,9 @@ export function AttendanceRecords() {
                           <Clock className="h-3.5 w-3.5 text-slate-300 shrink-0" />
                           {new Date(record.checkInTime).toLocaleTimeString()}
                         </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <StatusBadge status={getAttendanceStatus(record.checkInTime)} />
                       </td>
                       <td className="px-5 py-3.5">
                         {getConfidenceBadge(record.confidence)}
