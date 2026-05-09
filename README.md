@@ -1,358 +1,325 @@
-# Face Recognition Attendance System
+# Face Attendance System
 
-A full-stack application for automated attendance tracking using facial recognition technology. Built with Next.js, Python FastAPI, PostgreSQL, and Prisma ORM.
+A web app for student attendance using face recognition. The project has a Next.js frontend, Next.js API routes, a Python FastAPI face-recognition service, and a PostgreSQL database managed with Prisma.
 
-## Overview
+## Main Features
 
-This system provides:
-- **Student Registration**: Capture and encode facial data during registration
-- **Live Attendance**: Real-time face recognition for automatic attendance marking
-- **Records Management**: View attendance history with confidence scores
-- **Admin Dashboard**: Manage students and system settings
+- Register students with roll number, name, email, phone, and face samples
+- Encode face samples and save face data in PostgreSQL
+- Mark attendance from a live camera feed
+- Prevent duplicate attendance for the same student on the same day
+- View, search, filter, and export attendance records
+- Manage registered students from the admin page
 
-## Technology Stack
+## Tech Stack
 
-### Frontend
-- **Next.js 16** - React framework with App Router
-- **TypeScript** - Type-safe development
-- **Tailwind CSS** - UI styling
-- **shadcn/ui** - Component library
-- **Lucide Icons** - Icon system
-
-### Backend
-- **Python FastAPI** - Face recognition API
-- **face_recognition** - Deep learning face recognition
-- **OpenCV** - Image processing
-- **NumPy** - Numerical computations
-
-### Database
-- **PostgreSQL** - Relational database
-- **Prisma ORM** - Database client and migrations
+- Frontend: Next.js 16, React 19, TypeScript, Tailwind CSS, shadcn/ui
+- API: Next.js route handlers
+- Face service: Python, FastAPI, OpenCV, DeepFace/face embeddings
+- Database: PostgreSQL, Prisma ORM
+- Optional local services: Docker Compose
 
 ## Project Structure
 
-```
-.
-├── app/                          # Next.js app directory
-│   ├── api/                      # API routes
-│   │   ├── students/            # Student management
-│   │   ├── attendance/          # Attendance tracking
-│   │   └── face/                # Face recognition endpoints
-│   ├── register/                # Student registration
-│   ├── attendance/              # Mark attendance
-│   ├── records/                 # View attendance records
-│   └── admin/                   # Admin dashboard
-├── components/
-│   ├── registration/            # Registration components
-│   ├── attendance/              # Attendance components
-│   ├── records/                 # Records components
-│   └── admin/                   # Admin components
-├── lib/
-│   └── face-recognition.ts      # Face recognition utilities
-├── hooks/
-│   └── use-camera.ts            # Camera access hook
-├── prisma/
-│   └── schema.prisma            # Database schema
-├── python/
-│   ├── main.py                  # FastAPI application
-│   └── requirements.txt         # Python dependencies
-└── public/                      # Static files
+```text
+app/                     Next.js pages and API routes
+  api/
+    attendance/          Attendance API
+    students/            Student API
+    face/                Bridge to Python face service
+  register/              Student registration page
+  attendance/            Live attendance page
+  records/               Attendance records page
+  admin/                 Student management page
+components/              React UI and feature components
+hooks/                   Camera and shared React hooks
+lib/                     Utility code and face API helpers
+prisma/                  Prisma schema and migrations
+python/                  FastAPI face-recognition backend
+docker-compose.yml       PostgreSQL and Python service setup
+Dockerfile.python        Python API Docker image
 ```
 
-## Prerequisites
+## Requirements
 
-- Node.js 18+ and npm/pnpm
-- Python 3.8+
-- PostgreSQL 12+
-- Webcam/camera for face capture
+- Node.js 18 or newer
+- npm
+- Python 3.10 or newer recommended
+- PostgreSQL, or Docker Desktop if you want Docker to run PostgreSQL
+- A webcam or camera permission in the browser
 
-## Installation & Setup
+## Quick Start
 
-### 1. Environment Variables
+Use three terminals: one for the database, one for the Python API, and one for the Next.js app.
 
-Create `.env.local` in the project root:
-
-```env
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/attendance_db"
-
-# Python API
-NEXT_PUBLIC_PYTHON_API_URL="http://localhost:8000"
-
-# Face Recognition Threshold (0-1)
-NEXT_PUBLIC_FACE_RECOGNITION_THRESHOLD="0.6"
-```
-
-### 2. Database Setup
-
-Install dependencies and run migrations:
+### 1. Install Node Dependencies
 
 ```bash
 npm install
-
-# Run Prisma migrations
-npx prisma migrate deploy
-
-# Generate Prisma client
-npx prisma generate
 ```
 
-The database schema includes:
-- **students** table: Student information and face encoding paths
-- **attendance** table: Attendance records with timestamps and confidence scores
+### 2. Configure Environment Variables
 
-### 3. Python Backend Setup
-
-Set up the face recognition API:
-
-```bash
-cd python
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run FastAPI server
-python main.py
-```
-
-The server will start on `http://localhost:8000` with endpoints:
-- `POST /encode` - Encode face from image
-- `POST /recognize` - Recognize face against stored encodings
-- `POST /batch-encode` - Encode multiple images at once
-- `GET /health` - Health check
-
-### 4. Frontend Setup
-
-Start the Next.js development server:
-
-```bash
-npm run dev
-```
-
-The application will be available at `http://localhost:3000`
-
-## Usage
-
-### 1. Register a Student
-
-1. Go to `/register`
-2. Enter student details (roll number, name, email, phone)
-3. Capture 5 face samples using the camera or upload images
-4. Confirm and complete registration
-
-Face encodings are stored in the database and used for attendance recognition.
-
-### 2. Mark Attendance
-
-1. Go to `/attendance`
-2. Click "Start Attendance"
-3. The system continuously captures frames and recognizes faces
-4. Recognized students are automatically marked present
-5. Click "Stop Attendance" to end the session
-
-The system records:
-- Student ID
-- Check-in timestamp
-- Recognition confidence score (0-1)
-
-### 3. View Records
-
-1. Go to `/records`
-2. Filter by date or search for specific students
-3. View attendance history with confidence scores
-4. Export records as CSV
-
-### 4. Admin Dashboard
-
-1. Go to `/admin`
-2. View all registered students
-3. See registration status and face encoding status
-4. Search and filter students
-5. Delete students if needed
-6. View statistics (total students, today's registrations, recognized faces)
-
-## API Documentation
-
-### Student Endpoints
-
-```
-GET /api/students                    # Get all students
-POST /api/students                   # Create new student
-GET /api/students/[id]              # Get specific student
-PUT /api/students/[id]              # Update student
-DELETE /api/students/[id]           # Delete student
-```
-
-### Attendance Endpoints
-
-```
-GET /api/attendance                  # Get attendance records (filterable by date/studentId)
-POST /api/attendance                 # Record attendance
-```
-
-### Face Recognition Endpoints (via Next.js bridge)
-
-```
-POST /api/face/encode               # Encode face from image
-POST /api/face/recognize            # Recognize face against stored encodings
-```
-
-## Configuration
-
-### Face Recognition Threshold
-
-Adjust the confidence threshold in `.env.local`:
+Create or update `.env` in the project root:
 
 ```env
-NEXT_PUBLIC_FACE_RECOGNITION_THRESHOLD="0.6"  # 0-1 scale, lower = stricter
+DATABASE_URL="postgresql://postgres:1234@localhost:5433/face"
+NEXT_PUBLIC_PYTHON_API_URL="http://localhost:8000"
+NEXT_PUBLIC_FACE_RECOGNITION_THRESHOLD="0.6"
 ```
 
-- **0.6**: Strict (recommended for security)
-- **0.65**: Balanced
-- **0.7**: Lenient (more recognitions but may have false positives)
-
-### Python Backend Settings
-
-Edit `python/.env`:
+Create or update `python/.env`:
 
 ```env
 FACE_RECOGNITION_THRESHOLD=0.6
 ```
 
-## Development
+Important: `DATABASE_URL` must match your PostgreSQL username, password, port, and database name.
 
-### Running Tests
+### 3. Start PostgreSQL
+
+If you already have PostgreSQL running locally, create the database used in `.env`.
+
+Example for the current local setup:
 
 ```bash
-# Frontend
+createdb -U postgres -p 5433 face
+```
+
+If you want to use Docker Compose instead:
+
+```bash
+docker compose up -d postgres
+```
+
+The Docker Compose database uses this connection string:
+
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/attendance_db"
+```
+
+Use either your local PostgreSQL setup or Docker Compose, then make sure `.env` matches the one you chose.
+
+### 4. Run Prisma Migrations
+
+```bash
+npx prisma generate
+npx prisma migrate deploy
+```
+
+For development, you can also use:
+
+```bash
+npx prisma migrate dev
+```
+
+### 5. Start the Python Face API
+
+```bash
+cd python
+pip install -r requirements.txt
+python main.py
+```
+
+The Python API should run at:
+
+```text
+http://localhost:8000
+```
+
+Check it with:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Expected response:
+
+```json
+{"status":"ok","service":"face-recognition"}
+```
+
+### 6. Start the Next.js App
+
+Open a new terminal in the project root:
+
+```bash
+npm run dev
+```
+
+Open the app:
+
+```text
+http://localhost:3000
+```
+
+## App Pages
+
+- Home: `http://localhost:3000`
+- Register student: `http://localhost:3000/register`
+- Mark attendance: `http://localhost:3000/attendance`
+- View records: `http://localhost:3000/records`
+- Admin dashboard: `http://localhost:3000/admin`
+
+## How to Use
+
+### Register a Student
+
+1. Open `/register`.
+2. Enter the student information.
+3. Capture or upload clear face samples.
+4. Submit the form.
+5. The app sends the images to the Python API, receives face encodings, and saves the student in PostgreSQL.
+
+### Mark Attendance
+
+1. Open `/attendance`.
+2. Allow camera permission in the browser.
+3. Start attendance.
+4. The app compares the camera image with stored face encodings.
+5. When a student is recognized, the app saves attendance for today.
+
+### View Records
+
+1. Open `/records`.
+2. Search or filter attendance records.
+3. Export records if needed.
+
+### Manage Students
+
+1. Open `/admin`.
+2. View registered students.
+3. Search students or delete records when needed.
+
+## API Routes
+
+### Next.js API
+
+```text
+GET    /api/students
+POST   /api/students
+GET    /api/students/[id]
+PUT    /api/students/[id]
+DELETE /api/students/[id]
+
+GET    /api/attendance
+POST   /api/attendance
+
+POST   /api/face/encode
+POST   /api/face/recognize
+POST   /api/face/recognize-batch
+```
+
+### Python API
+
+```text
+GET  /health
+POST /encode
+POST /recognize
+POST /recognize-batch
+POST /batch-encode
+```
+
+## Useful Commands
+
+```bash
+# Start frontend
+npm run dev
+
+# Build frontend
+npm run build
+
+# Run lint
 npm run lint
 
-# Python
-cd python && python -m pytest
+# Generate Prisma client
+npx prisma generate
+
+# Apply existing migrations
+npx prisma migrate deploy
+
+# Create/apply a development migration
+npx prisma migrate dev
+
+# Open Prisma Studio
+npx prisma studio
+
+# Start Docker database only
+docker compose up -d postgres
+
+# Start Docker database and Python API
+docker compose up -d postgres python-api
 ```
-
-### Database Migrations
-
-Create a new migration:
-
-```bash
-npx prisma migrate dev --name <migration_name>
-```
-
-View and manage migrations in `prisma/migrations/`
-
-## Deployment
-
-### Frontend (Vercel)
-
-```bash
-npm run build
-vercel deploy
-```
-
-### Python Backend
-
-Deploy the FastAPI application using:
-- Docker + Cloud Run
-- Railway.app
-- Render.com
-- Self-hosted server
-
-Example Docker setup:
-
-```dockerfile
-FROM python:3.11
-WORKDIR /app
-COPY python/requirements.txt .
-RUN pip install -r requirements.txt
-COPY python . 
-CMD ["python", "main.py"]
-```
-
-### Database
-
-Use managed PostgreSQL services:
-- AWS RDS
-- Google Cloud SQL
-- Heroku PostgreSQL
-- Neon
 
 ## Troubleshooting
 
-### "No faces detected"
-- Ensure good lighting
-- Position face directly towards camera
-- Keep face fully visible
-- Try uploading images instead of camera capture
+### Database Connection Error
 
-### "Face recognition confidence too low"
-- Adjust threshold in `.env.local`
-- Re-register student with better quality images
-- Ensure consistent lighting conditions
+- Check that PostgreSQL is running.
+- Check that `.env` has the correct `DATABASE_URL`.
+- Make sure the database exists.
+- Run `npx prisma generate` and `npx prisma migrate deploy`.
 
-### "Camera not accessible"
-- Check browser permissions for camera access
-- Ensure camera is not in use by another application
-- Try a different browser
-- Check HTTPS requirement (some browsers require it)
+### Python API Not Responding
 
-### "Database connection error"
-- Verify DATABASE_URL in `.env.local`
-- Check PostgreSQL server is running
-- Ensure database exists
-- Run migrations: `npx prisma migrate deploy`
+- Make sure `python main.py` is running.
+- Open `http://localhost:8000/health`.
+- Check that `NEXT_PUBLIC_PYTHON_API_URL` is `http://localhost:8000`.
+- Restart the Next.js app after changing environment variables.
 
-### "Python API not responding"
-- Check NEXT_PUBLIC_PYTHON_API_URL is correct
-- Ensure Python server is running on port 8000
-- Check CORS configuration in FastAPI
-- Verify firewall allows connections
+### Python Dependency Error
 
-## Performance Tips
+- Run the install command again from the `python/` folder:
 
-1. **Image Quality**: Use images ≥ 640x480px for better recognition
-2. **Lighting**: Ensure consistent, adequate lighting
-3. **Face Size**: Position face to occupy 30-50% of image
-4. **Batch Processing**: Use batch-encode endpoint for multiple registrations
-5. **Database**: Add indexes on frequently queried columns (already configured)
+```bash
+pip install -r requirements.txt
+```
 
-## Security Considerations
+- If an error says a package is missing, install the missing package and add it to `python/requirements.txt`.
 
-1. **Face Data**: Encodings are stored as JSON, consider encryption at rest
-2. **API Authentication**: Add authentication middleware for production
-3. **Rate Limiting**: Implement rate limiting on API endpoints
-4. **HTTPS**: Use HTTPS in production
-5. **Environment Variables**: Never commit `.env.local` to version control
+### Camera Not Working
 
-## Contributing
+- Allow camera permission in the browser.
+- Close other apps that may be using the camera.
+- Try Chrome or Edge.
+- Use good lighting and keep one face clearly visible.
 
-Contributions are welcome! Please:
+### No Face Detected
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+- Use a brighter room.
+- Face the camera directly.
+- Keep the whole face inside the frame.
+- Avoid multiple faces in one image.
+- Try uploading clearer images during registration.
 
-## License
+### Face Not Recognized
 
-MIT License - see LICENSE file for details
+- Register the student again with better face samples.
+- Keep lighting similar between registration and attendance.
+- Adjust the threshold in `.env` and `python/.env`.
 
-## Support
+Recommended threshold:
 
-For issues or questions:
-1. Check the troubleshooting section
-2. Review the API documentation
-3. Check database schema in `prisma/schema.prisma`
-4. Review FastAPI logs in `python/main.py`
+```env
+NEXT_PUBLIC_FACE_RECOGNITION_THRESHOLD="0.6"
+FACE_RECOGNITION_THRESHOLD=0.6
+```
 
-## Future Enhancements
+## Production Notes
 
-- [ ] Multi-face detection and handling
-- [ ] Real-time attendance dashboard
-- [ ] Email notifications
-- [ ] Student mobile app
-- [ ] Advanced analytics and reporting
-- [ ] Machine learning model fine-tuning
-- [ ] Biometric temperature integration
-- [ ] QR code backup attendance
+Before using this in production:
+
+- Add authentication for admin and API routes
+- Use HTTPS
+- Use a managed PostgreSQL database
+- Protect environment variables
+- Add rate limiting for face-recognition endpoints
+- Review how face data is stored and secured
+- Update CORS origins in `python/main.py`
+
+## More Documentation
+
+- `SETUP.md` has another quick setup guide.
+- `API.md` has detailed API examples.
+- `ENV_CONFIG.md` explains environment variables.
+- `DEVELOPER_GUIDE.md` has extra developer notes.
