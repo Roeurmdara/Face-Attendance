@@ -5,17 +5,6 @@
   "framework": "nextjs",
   "regions": ["iad1"],
   "env": {
-    "DATABASE_URL": {
-      "description": "PostgreSQL connection string",
-      "required": true
-    },
-    "NEXT_PUBLIC_PYTHON_API_URL": {
-      "description": "Python backend URL (optional if migrating to Node.js)",
-      "required": false
-    },
-    "NEXT_PUBLIC_FACE_RECOGNITION_THRESHOLD": {
-      "description": "Face recognition confidence threshold",
-      "value": "0.6"
-    }
+    "NEXT_PUBLIC_FACE_RECOGNITION_THRESHOLD": "0.6"
   }
 }
