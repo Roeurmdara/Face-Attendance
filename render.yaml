@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: face-attendance-python-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile.python
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: FACE_RECOGNITION_THRESHOLD
+        value: "0.6"
